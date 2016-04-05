@@ -7,7 +7,9 @@ import android.view.View;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.*;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.*;
 import com.google.android.gms.drive.query.*;
@@ -16,7 +18,7 @@ import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
 
 public class MainActivity extends FragmentActivity
-        implements OnConnectionFailedListener {
+        implements ConnectionCallbacks, OnConnectionFailedListener {
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -32,6 +34,7 @@ public class MainActivity extends FragmentActivity
                 .addApi(Drive.API)
                 .addScope(Drive.SCOPE_FILE)
                 .build();
+        mGoogleApiClient.connect();
 
         // ...
 
@@ -43,29 +46,52 @@ public class MainActivity extends FragmentActivity
     }
 
     public void RunQuery(View view) {
+        Toaster("Running Query...");
         Query query = new Query.Builder()
-                .addFilter(Filters.eq(SearchableField.TITLE, "Connor.txt"))
+                .addFilter(Filters.eq(SearchableField.STARRED,false))
                 .build();
-        DriveApi.MetadataBufferResult result =
-                Drive.DriveApi.query(mGoogleApiClient, query).await();
 
-        if (result.getStatus().isSuccess()){
-            MetadataBuffer listOfMetadata = result.getMetadataBuffer();
-            if (listOfMetadata != null){
-                for (Metadata metaDataFile : listOfMetadata){
-                    Toaster("The file (" + metaDataFile.getTitle()+") was created on ("+metaDataFile.getCreatedDate()+")");
+        /*PendingResult<DriveApi.MetadataBufferResult> result = Drive.DriveApi.query(mGoogleApiClient, query);
+        result.*/
+
+        if (mGoogleApiClient.isConnected()) {
+            // Invoke the query asynchronously with a callback method
+            Drive.DriveApi.query(mGoogleApiClient, query).
+            setResultCallback(new ResultCallback<DriveApi.MetadataBufferResult>() {
+                @Override
+                public void onResult(DriveApi.MetadataBufferResult result) {
+                    if (result.getStatus().isSuccess()) {
+                        MetadataBuffer listOfMetadata = result.getMetadataBuffer();
+                        if (listOfMetadata != null) {
+                            for (Metadata metaDataFile : listOfMetadata) {
+                                Toaster("The file" + metaDataFile.getTitle());
+                            }
+                        } else {
+                            Toaster("Meta Data is null");
+                        }
+                    } else {
+                        Toaster("Failed to load");
+                    }
                 }
-            }else{
-                Toaster("Meta Data is null");
-            }
-        }else {
-            Toaster("Failed to load");
+            });
+        }else{
+            Toaster("Not connected to services");
         }
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         //Throw errors here
-        System.err.println("ERROR, ERROR, ERROR");
+        Toaster("ERROR ERROR ERROR");
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Toaster("Connected to services");
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        System.out.println("RESULT - Suspended("+i+")");
     }
 }
