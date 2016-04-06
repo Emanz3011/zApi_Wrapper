@@ -3,7 +3,6 @@ package com.example.zacc.googleapiscratch;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
@@ -11,15 +10,16 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.*;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.drive.*;
-import com.google.android.gms.drive.query.*;
 import com.google.android.gms.drive.DriveApi.*;
+import com.google.android.gms.drive.DriveFolder.*;
+
 
 import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
+
+import java.io.*;
 
 public class MainActivity extends FragmentActivity
         implements ConnectionCallbacks, OnConnectionFailedListener {
@@ -45,47 +45,64 @@ public class MainActivity extends FragmentActivity
 
     }
 
-    public void Toaster(String result) {
-        Toast.makeText(this, "Result:" + result, Toast.LENGTH_LONG).show();
-        System.out.println("Toaster: " + result);
-    }
-
-    public void BtnQuery(View view){
-        RunQuery();
-    }
-
-    public void RunQuery() {
-        Toaster("Running Query...");
-        Query query = new Query.Builder()
-                .addFilter(Filters.eq(SearchableField.STARRED,false))
-                .build();
-
-        /*PendingResult<DriveApi.MetadataBufferResult> result = Drive.DriveApi.query(mGoogleApiClient, query);
-        result.*/
-
-        if (mGoogleApiClient.isConnected()) {
-            // Invoke the query asynchronously with a callback method
-            Drive.DriveApi.query(mGoogleApiClient, query).
-            setResultCallback(new ResultCallback<DriveApi.MetadataBufferResult>() {
+    final private ResultCallback<DriveContentsResult> driveContentsCallback = new
+            ResultCallback<DriveContentsResult>() {
                 @Override
-                public void onResult(DriveApi.MetadataBufferResult result) {
-                    if (result.getStatus().isSuccess()) {
-                        MetadataBuffer listOfMetadata = result.getMetadataBuffer();
-                        if (listOfMetadata != null) {
-                            for (Metadata metaDataFile : listOfMetadata) {
-                                Toaster("The file" + metaDataFile.getTitle());
-                            }
-                        } else {
-                            Toaster("Meta Data is null");
-                        }
-                    } else {
-                        Toaster("Failed to load");
+                public void onResult(DriveContentsResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        Toaster("Error while trying to create new file contents");
+                        return;
                     }
-                }
-            });
+                    final DriveContents driveContents = result.getDriveContents();
 
+                    // Perform I/O off the UI thread.
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            // write content to DriveContents
+                            OutputStream outputStream = driveContents.getOutputStream();
+                            Writer writer = new OutputStreamWriter(outputStream);
+                            try {
+                                writer.write("Hello World!");
+                                writer.close();
+                            } catch (IOException e) {
+                                //Log.e(TAG, e.getMessage());
+                            }
+
+                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                    .setTitle("New file")
+                                    .setMimeType("text/plain")
+                                    .setStarred(true).build();
+
+                            // create a file in root folder
+                            Drive.DriveApi.getRootFolder(mGoogleApiClient)
+                                    .createFile(mGoogleApiClient, changeSet, driveContents)
+                                    .setResultCallback(fileCallback);
+                        }
+                    }.start();
+                }
+            };
+
+    final private ResultCallback<DriveFileResult> fileCallback = new
+            ResultCallback<DriveFileResult>() {
+                @Override
+                public void onResult(DriveFileResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        Toaster("Error while trying to create the file");
+                        return;
+                    }
+                    Toaster("Created a file with content: " + result.getDriveFile().getDriveId());
+                }
+            };
+
+
+
+    public void RunDriveRequest() {
+
+        if (mGoogleApiClient.isConnected()){
+            Drive.DriveApi.newDriveContents(mGoogleApiClient)
+                    .setResultCallback(driveContentsCallback);
         }else{
-            Toaster("Not connected to services");
             mGoogleApiClient.connect();
         }
     }
@@ -124,11 +141,20 @@ public class MainActivity extends FragmentActivity
     @Override
     public void onConnected(Bundle bundle) {
         Toaster("Connected to services");
-        RunQuery();
+        RunDriveRequest();
     }
 
     @Override
     public void onConnectionSuspended(int i) {
         System.out.println("RESULT - Suspended("+i+")");
+    }
+
+    public void Toaster(String result) {
+        Toast.makeText(this, "Result:" + result, Toast.LENGTH_LONG).show();
+        System.out.println("Toaster: " + result);
+    }
+
+    public void BtnQuery(View view){
+        RunDriveRequest();
     }
 }
