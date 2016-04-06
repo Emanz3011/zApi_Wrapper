@@ -16,6 +16,6 @@
         android:layout_height="wrap_content"
         android:text="Make Google Drive Call"
         android:id="@+id/button"
-        android:onClick="RunQuery"
+        android:onClick="BtnQuery"
         android:layout_centerHorizontal="true" />
 </RelativeLayout>
