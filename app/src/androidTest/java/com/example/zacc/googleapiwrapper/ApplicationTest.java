@@ -1,4 +1,4 @@
-package com.example.zacc.googleapiscratch;
+package com.example.zacc.googleapiwrapper;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
