@@ -40,7 +40,7 @@ public class MainActivity extends FragmentActivity{
 
     public void RunDriveRequest() {
         if (zClient.isConnected()) {
-            zDrive.CreateDocument(zClient, "Automatic zApi File", "zApi called immediately upon the activities on create", true);
+            zDrive.CreateDocument(zClient, "Manual zApi File", "zApi called from an external function", false);
         }
     }
 }
