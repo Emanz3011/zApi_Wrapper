@@ -16,9 +16,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-/**
- * Created by Zacc on 2016-04-12.
- */
 public class DriveZAPI implements ZAPIClient.ZAPI{
 
     @Override
