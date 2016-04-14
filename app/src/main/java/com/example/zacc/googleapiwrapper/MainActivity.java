@@ -1,31 +1,15 @@
 package com.example.zacc.googleapiwrapper;
 
-import android.content.Intent;
-import android.content.IntentSender;
-import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.view.View;
 
-import com.example.zacc.googleapiwrapper.ZAPIWrapper.DriveZAPI;
-import com.example.zacc.googleapiwrapper.ZAPIWrapper.ZAPIClient;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.*;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.drive.*;
-import com.google.android.gms.drive.DriveApi.*;
-import com.google.android.gms.drive.DriveFolder.*;
-
-import android.support.v4.app.FragmentActivity;
-import android.widget.Toast;
-
-import java.io.*;
+import com.example.zacc.googleapiwrapper.ZAPIWrapper.*;
 
 public class MainActivity extends FragmentActivity{
 
-    private ZAPIClient zClient;
-    private DriveZAPI zDrive;
+    ZAPIClient zClient;
+    DriveZAPI zDrive;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +23,7 @@ public class MainActivity extends FragmentActivity{
     }
 
     public void RunDriveRequest() {
-        zDrive.CreateDocument(zClient,"My File","I created a file from ZAPI",true);
+        zDrive.CreateDocument(zClient, "*New* zAPI File", "I created a file from zAPI", true);
     }
 
     public void BtnQuery(View view) {
