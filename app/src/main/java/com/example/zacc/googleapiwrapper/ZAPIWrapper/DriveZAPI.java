@@ -18,13 +18,7 @@ import java.io.Writer;
 
 public class DriveZAPI implements ZAPIClient.ZAPI{
 
-    @Override
-    public GoogleApiClient.Builder buildInstructions(GoogleApiClient.Builder originalBuilder, Context context, FragmentActivity fragmentActivity) {
-        originalBuilder.addApi(Drive.API)
-                .addScope(Drive.SCOPE_FILE);
-        return originalBuilder;
-    }
-
+    //Create a googleDocs text file on the user's drive account
     public void CreateDocument(ZAPIClient client, String fileTitle, String fileContents, boolean isStarred){
         if (client.getClient().isConnected()) {
             Drive.DriveApi.newDriveContents(client.getClient())
@@ -81,6 +75,7 @@ public class DriveZAPI implements ZAPIClient.ZAPI{
                 };
     }
 
+    //Handles errors that may occur during the creation of the file on google drive
     private ResultCallback<DriveFolder.DriveFileResult> fileCallback() {
         return new
                 ResultCallback<DriveFolder.DriveFileResult>() {
@@ -93,6 +88,14 @@ public class DriveZAPI implements ZAPIClient.ZAPI{
                         Toaster("Created a file with content at: " + result.getDriveFile().getDriveId());
                     }
                 };
+    }
+
+    //Build instructions
+    @Override
+    public GoogleApiClient.Builder buildInstructions(GoogleApiClient.Builder originalBuilder, Context context, FragmentActivity fragmentActivity) {
+        originalBuilder.addApi(Drive.API)
+                .addScope(Drive.SCOPE_FILE);
+        return originalBuilder;
     }
 
     //Cleans up debugging and error handling

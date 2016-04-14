@@ -14,18 +14,49 @@ import com.google.android.gms.common.api.GoogleApiClient.*;
 import java.util.ArrayList;
 
 public class ZAPIClient implements OnConnectionFailedListener {
+    //Static properties to be shared across multiple instances of ZAPIClient
     static private GoogleApiClient mGoogleApiClient;
     static private boolean registered = false;
     static private ArrayList<ZAPI> attachedZapis;
+    static private ArrayList<onCreateCallback> attachedCallbacks;
 
+    //Initialize the ZAPIClient
     public ZAPIClient(){
         attachedZapis = new ArrayList<>();
+        attachedCallbacks = new ArrayList<>();
     }
+
 
     public GoogleApiClient getClient(){
-            return mGoogleApiClient;
+        return mGoogleApiClient;
     }
 
+    public boolean isConnected() {
+        if (mGoogleApiClient.isConnected())
+            return true;
+        return false;
+    }
+
+    //Allows coders to add and override callbacks,
+    //this way specific code can be run as soon as the ZAPIclient connects
+    public void addCallback(onCreateCallback c) {
+        attachedCallbacks.add(c);
+    }
+
+    public class onCreateCallback {
+        public void onCreate() {
+        }
+    }
+
+    private void clientConnected() {
+        Toaster("Api onConnects being called");
+        for (onCreateCallback c : attachedCallbacks) {
+            c.onCreate();
+        }
+    }
+
+    //Allows coders to add APIs to the list of attached APIs so that those APIs can be properly
+    //initialized when the client is created.
     public void AddAPI(ZAPI zAPI){
         if (!registered) {
             //Check for copies of api
@@ -41,10 +72,15 @@ public class ZAPIClient implements OnConnectionFailedListener {
         Toaster("The client has already been built and registered.");
     }
 
+    //All APIs will implement this interface to add the correct build instructions when the client
+    //is created
     interface ZAPI{
         Builder buildInstructions(Builder originalBuilder, Context context, FragmentActivity fragmentActivity);
     }
 
+    //This creates the google client and runs all the build instructions of attached APIs.
+    //Finally, the google client attempts to connect in a new thread.
+    //When the client connects, all attached callbacks will be run.
     public void registerClient(Context context, FragmentActivity fragmentActivity) {
         Builder clientBuilder = new Builder(context)
                 .enableAutoManage(fragmentActivity,
@@ -53,9 +89,20 @@ public class ZAPIClient implements OnConnectionFailedListener {
             clientBuilder = zAPI.buildInstructions(clientBuilder,context,fragmentActivity);
         }
         mGoogleApiClient = clientBuilder.build();
+        mGoogleApiClient.connect();
+        new Thread() {
+            @Override
+            public void run() {
+                //wait till finished connecting
+                while (mGoogleApiClient.isConnecting()) {
+                }
+                clientConnected();
+            }
+        }.start();
         registered = true;
     }
 
+    //Handles failures in attempts to connect the google client
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toaster("ERROR(" + connectionResult + ")");
